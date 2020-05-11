@@ -80,39 +80,6 @@ app.get(
   })
 );
 
-// app.post("/webhook", (req, res) => {
-//   const startHook = async () => {
-//     try {
-//       const webhook = new Autohook({
-//         token: req.query.token,
-//         token_secret: req.query.tokenSecret,
-//         consumer_key: process.env.TWITTER_CONSUMER_KEY,
-//         consumer_secret: process.env.TWITTER_CONSUMER_SECRET,
-//         env: process.env.TWITTER_ENVIRONMENT,
-//         port: 1337
-//       });
-      
-//       // Removes existing webhooks
-//       await webhook.removeWebhooks();
-      
-//       // Starts a server and adds a new webhook
-//       await webhook.start();
-    
-//       // Subscribes to your own user's activity
-//       await webhook.subscribe({oauth_token: req.query.token, oauth_token_secret: req.query.tokenSecret});
-//       webhook.on('event', async(event) => {
-//         console.log(event);
-//       })
-//     } catch (e) {
-//       // Display the error and quit
-//       console.error(e);
-//       process.exit(1);
-//     }
-//   };
-//   startHook();
-//   res.status(200).end()
-// })
-
 const server = new ApolloServer({
   typeDefs,
   resolvers,

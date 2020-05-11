@@ -14,7 +14,7 @@ router.get("/login/success", (req, res) => {
   }
 });
 
-router.get("/whatever", (req, re) => {
+router.get("/whatever", (req, res) => {
   res.send('Hello I am in auth whatever')
 });
 

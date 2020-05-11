@@ -73,9 +73,7 @@ app.get("/", authCheck, (req, res) => {
 });
 
 app.get("/whatever", (req, res) => {
-  console.log('TWITTER_CONSUMER_KEY', process.env.TWITTER_CONSUMER_KEY);
-  console.log('TWITTER_CONSUMER_KEY', process.env.TWITTER_CONSUMER_SECRET);
-  res.send('Hello I am in whatever');
+  passport.authenticate("twitter")
 });
 
 app.get(

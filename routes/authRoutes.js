@@ -33,6 +33,6 @@ router.get("/logout", (req, res) => {
 });
 
 // auth with twitter
-router.get("/twitter", passport.authenticate("twitter"));
+// router.get("/twitter", passport.authenticate("twitter"));
 
 module.exports = router;

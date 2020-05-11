@@ -14,6 +14,10 @@ router.get("/login/success", (req, res) => {
   }
 });
 
+router.get("/whatever", (req, re) => {
+  res.send('Hello I am in auth whatever')
+});
+
 // when login failed, send failed msg
 router.get("/login/failed", (req, res) => {
   res.status(401).json({

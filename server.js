@@ -72,7 +72,7 @@ app.get("/", authCheck, (req, res) => {
   });
 });
 
-app.get("/whatever", (req, re) => {
+app.get("/whatever", (req, res) => {
   res.send('Hello I am in whatever');
 });
 

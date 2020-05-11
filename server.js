@@ -84,6 +84,7 @@ const server = new ApolloServer({
   typeDefs,
   resolvers,
   introspection: true,
+  playground: true,
   context: async ({ req, connection }) => {
     if (!req) {
       return{

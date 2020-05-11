@@ -83,6 +83,7 @@ app.get(
 const server = new ApolloServer({
   typeDefs,
   resolvers,
+  introspection: true,
   context: async ({ req, connection }) => {
     if (!req) {
       return{

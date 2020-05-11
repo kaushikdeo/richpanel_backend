@@ -21,6 +21,7 @@ module.exports = {
           // Subscribes to your own user's activity
           await webhook.subscribe({oauth_token: token, oauth_token_secret: tokenSecret});
           webhook.on('event', async(event) => {
+            console.log('EVENT')
             // push to database
             const allMentions = event.tweet_create_events.map(mention => {
               const tweetImages = mention.entities && mention.entities.media ? mention.entities.media : [];
@@ -126,21 +127,35 @@ module.exports = {
       return newTask
     },
 
-    replyToMention: async (parent, {InReplyToStatus, replyText, userHandle}, {T}) => {
-      console.log(' I AM IN');
+    replyToMention: async (parent, {InReplyToStatus, replyText, userHandle}, {T, db}) => {
+      console.log('InReplyToStatus', InReplyToStatus, 'userHandle', userHandle);
       const params = {
         status: `@${userHandle} ${replyText}`,
         in_reply_to_status_id: InReplyToStatus,
       }
-      T.post('statuses/update', params, async (err, data, response) => {
-        // console.log('err', err);
-        // console.log('data', data);
-        console.log('responseresponseresponseresponseresponseresponseresponseresponseresponseresponse', response);
-      })
-      return {
-        success: true,
-        message: 'Replied'
-      }
+      const finalReply = await await T.post('statuses/update', params);
+      console.log("asxasxnasxasxasx", finalReply.data.user);
+      const tweetImages = finalReply.data.entities && finalReply.data.entities.media ? finalReply.data.entities.media : [];
+      const tweetMedia = tweetImages && tweetImages.length > 0 ? finalReply.data.entities.media.map(m => m.media_url) : [];
+      const newReply = {
+        _id: ObjectId(),
+        mentionID: finalReply.data.id_str,
+        mentionText: finalReply.data.text,
+        tweetImages: tweetMedia,
+        timeStamp: finalReply.data.created_at,
+        in_reply_to_status_id_str: finalReply.data.in_reply_to_status_id_str,
+        tasks: [],
+        userData: {
+          twitterUserId: finalReply.data.user.id_str,
+          mentionFromScreenName: finalReply.data.user.screen_name,
+          description: finalReply.data.user.description,
+          profileImage: finalReply.data.user.profile_image_url_https,
+          location: finalReply.data.user.location,
+        },
+        replies: []
+      };
+      await db.collection('mentions').findOneAndUpdate({mentionID: newReply.in_reply_to_status_id_str}, { $addToSet: { replies: newReply } })
+      return newReply;
     }
   },
   Subscription: {

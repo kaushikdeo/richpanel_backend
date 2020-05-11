@@ -72,10 +72,6 @@ app.get("/", authCheck, (req, res) => {
   });
 });
 
-app.get("/whatever", (req, res) => {
-  passport.authenticate("twitter")
-});
-
 app.get(
   "/twitter/callback",
   passport.authenticate("twitter", {

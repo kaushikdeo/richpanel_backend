@@ -88,19 +88,30 @@ module.exports = {
       // await db.collection('mentions').findOneAndUpdate({mentionID: newReply.in_reply_to_status_id_str}, { $addToSet: { replies: newReply } })
       return newReply;
     },
-    setupWebhook: async (parent, {}, {token, tokenSecret, T, db, webhook, pubsub}) => {
+    setupWebhook: async (parent, {}, {token, tokenSecret, T, db, pubsub}) => {
+      console.log('JHBSJHBXHJSBSHJBXHJBXJHSBXJHSBXHJSJHBSJHBSJHSJHBXJHSBXJHSBJHBXJHSBJHSBXJHSBXJHSBJHBJHSBJHSBJHSBJHSBJHSBJHBJHBJHBJSH');
+      const webhook = new Autohook({
+        token: token,
+        token_secret: tokenSecret,
+        consumer_key: process.env.TWITTER_CONSUMER_KEY,
+        consumer_secret: process.env.TWITTER_CONSUMER_SECRET,
+        env: 'dev',
+        port: 1337
+      });
       const startHook = async () => {
         try {
           
           // Removes existing webhooks
           await webhook.removeWebhooks();
           
+          if(webhook) {}
           // Starts a server and adds a new webhook
           await webhook.start();
         
           // Subscribes to your own user's activity
           await webhook.subscribe({oauth_token: token, oauth_token_secret: tokenSecret});
           webhook.on('event', async(event) => {
+            // console.log('EVENT', event);
             // push to database
             const allMentions = event.tweet_create_events.map(mention => {
               const tweetImages = mention.entities && mention.entities.media ? mention.entities.media : [];
@@ -109,7 +120,7 @@ module.exports = {
                 _id: ObjectId(),
                 mentionID: mention.id_str,
                 mentionText: mention.text.replace(/(?:https?|ftp):\/\/[\n\S]+/g, ''),
-                timeStamp: mention.created_at,
+                timeStamp: new Date(new Date(mention.created_at)),
                 in_reply_to_status_id_str: mention.in_reply_to_status_id_str,
                 tweetImages: tweetMedia,
                 tasks: [],
@@ -124,16 +135,23 @@ module.exports = {
               };
               return newMention;
             });
-            pubsub.publish(NEW_MENTION, {newMention: allMentions});
-            allMentions.map(async (me) => {
-              const isPresent = await db.collection('mentions').findOne({mentionID: me.mentionID});
-              const isReply = await db.collection('mentions').findOne({mentionID: me.in_reply_to_status_id_str});
-              if (isReply) {
-                const added = await db.collection('mentions').findOneAndUpdate({mentionID: me.in_reply_to_status_id_str}, { $addToSet: { replies: me } })
-              } else if (!isPresent) {
-                await db.collection('mentions').insertOne(me);
-              }
-            })
+            const fetchedMentions = await Promise.all(
+              allMentions.map(async (me) => {
+                const isPresent = await db.collection('mentions').findOne({mentionID: me.mentionID});
+                const isReply = await db.collection('mentions').findOne({mentionID: me.in_reply_to_status_id_str});
+                let subMention = null;
+                if (isReply) {
+                  const added = await db.collection('mentions').findOneAndUpdate({mentionID: me.in_reply_to_status_id_str}, { $addToSet: { replies: me } })
+                  subMention = added.value;
+                } else 
+                if (!isPresent) {
+                  const newAdded = await db.collection('mentions').insertOne(me);
+                  subMention = newAdded.ops[0];
+                }
+                return subMention;
+              })
+            )
+            pubsub.publish(NEW_MENTION, {newMention: fetchedMentions});
           })
         } catch (e) {
           // Display the error and quit

@@ -4,12 +4,12 @@ module.exports = gql`
   extend type Query {
     greetings: String!,
     fetchCurrentMentions: [Mention]
-    setupWebhook: Response
   }
 
   extend type Mutation {
     addNewMentionTask(mentionId: String! taskText: String!): Task!
     replyToMention(InReplyToStatus: String, replyText: String, userHandle: String): Mention
+    setupWebhook: Response
   }
 
   extend type Subscription {

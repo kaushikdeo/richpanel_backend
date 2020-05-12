@@ -8,7 +8,6 @@ const authRoutes = require("./routes/authRoutes");
 const cors = require("cors");
 const bodyParser = require('body-parser');
 const cookieParser = require("cookie-parser"); // parse cookie header
-const { Autohook } = require('twitter-autohook');
 const Twit = require('twit');
 const {ApolloServer, PubSub} = require('apollo-server-express');
 const typeDefs = require('./schema');
@@ -52,7 +51,9 @@ app.use(passport.session());
 app.use("/auth", authRoutes);
 
 const authCheck = (req, res, next) => {
+  console.log(' OUT OF AUTH CHECK');
   if (!req.user) {
+    console.log(' IN OF AUTH CHECK NO USER');
     res.status(401).json({
       authenticated: false,
       message: "user has not been authenticated"
@@ -63,6 +64,7 @@ const authCheck = (req, res, next) => {
 };
 
 app.get("/", authCheck, (req, res) => {
+  console.log('IN ROOOT ROUTE')
   res.setHeader('Set-Cookie', [`token=${req.user.token}`, `tokenSecret=${req.user.tokenSecret}`, `userName=${req.user.tokenSecret}`]);
   res.status(200).json({
     authenticated: true,
@@ -92,11 +94,6 @@ const server = new ApolloServer({
       };
     } else {
       let T = null;
-      let webhook = null;
-      console.log('req.headers.authtoken', req.headers.authtoken);
-      console.log('req.headers.authtoken', req.headers.authtokensecret);
-      console.log('process.env.TWITTER_CONSUMER_SECRET', process.env.TWITTER_CONSUMER_SECRET);
-      console.log('TWITTER_CONSUMER_KEY', process.env.TWITTER_CONSUMER_KEY);
       if (req.headers.authtoken && req.headers.authtokensecret) {
         T = new Twit({
           consumer_key: process.env.TWITTER_CONSUMER_KEY,
@@ -106,14 +103,6 @@ const server = new ApolloServer({
           timeout_ms:           60*1000,  // optional HTTP request timeout to apply to all requests.
           strictSSL:            true,     // optional - requires SSL certificates to be valid.
         });
-        webhook = new Autohook({
-          token: req.headers.authtoken,
-          token_secret: req.headers.authtokensecret,
-          consumer_key: process.env.TWITTER_CONSUMER_KEY,
-          consumer_secret: process.env.TWITTER_CONSUMER_SECRET,
-          env: 'dev',
-          port: 1337
-        });
       }
       const client = await loadDB();
       const db = await client.db('richpaneldb');
@@ -122,7 +111,6 @@ const server = new ApolloServer({
         tokenSecret: req.headers.authtokensecret,
         T,
         db,
-        webhook,
         pubsub,
       };
     }

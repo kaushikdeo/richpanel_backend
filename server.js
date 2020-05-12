@@ -30,11 +30,7 @@ app.use(
 );
 
 app.use(
-  cors({
-    origin: "https://fast-reef-15816.herokuapp.com/", // allow to server to accept request from different origin
-    methods: "GET,HEAD,PUT,PATCH,POST,DELETE",
-    credentials: true // allow session cookie from browser to pass through
-  }),
+  cors({}),
   bodyParser.json({ limit: '50mb' }),
   bodyParser.urlencoded({ extended: true }),
 );

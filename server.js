@@ -75,7 +75,7 @@ app.get("/", authCheck, (req, res) => {
 app.get(
   "/twitter/callback",
   passport.authenticate("twitter", {
-    successRedirect: "http://localhost:3000",
+    successRedirect: "https://fast-reef-15816.herokuapp.com",
     failureRedirect: "/auth/login/failed"
   })
 );

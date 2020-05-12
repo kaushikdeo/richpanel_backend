@@ -21,7 +21,6 @@ passport.use(
       callbackURL: "/twitter/callback"
     },
     async (token, tokenSecret, profile, done) => {
-      console.log('INSIDE PASSPORT CONFID')
       done(null, {token, tokenSecret, profile});
     }
   )

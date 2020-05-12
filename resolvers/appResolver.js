@@ -89,65 +89,59 @@ module.exports = {
       return newReply;
     },
     setupWebhook: async (parent, {}, {token, tokenSecret, T, db, webhook, pubsub}) => {
-      // const startHook = async () => {
-      //   try {
+      const startHook = async () => {
+        try {
           
-      //     // Removes existing webhooks
-      //     await webhook.removeWebhooks();
+          // Removes existing webhooks
+          await webhook.removeWebhooks();
           
-      //     // Starts a server and adds a new webhook
-      //     await webhook.start();
+          // Starts a server and adds a new webhook
+          await webhook.start();
         
-      //     // Subscribes to your own user's activity
-      //     await webhook.subscribe({oauth_token: token, oauth_token_secret: tokenSecret});
-      //     webhook.on('event', async(event) => {
-      //       console.log('Am i getting fired');
-      //       console.log('BRO I AM WORKING MAN', event.tweet_create_events);
-      //       // push to database
-      //       const allMentions = event.tweet_create_events.map(mention => {
-      //         const tweetImages = mention.entities && mention.entities.media ? mention.entities.media : [];
-      //         const tweetMedia = tweetImages && tweetImages.length > 0 ? mention.entities.media.map(m => m.media_url) : [];
-      //         const newMention = {
-      //           _id: ObjectId(),
-      //           mentionID: mention.id_str,
-      //           mentionText: mention.text.replace(/(?:https?|ftp):\/\/[\n\S]+/g, ''),
-      //           timeStamp: mention.created_at,
-      //           in_reply_to_status_id_str: mention.in_reply_to_status_id_str,
-      //           tweetImages: tweetMedia,
-      //           tasks: [],
-      //           replies: [],
-      //           userData: {
-      //             twitterUserId: mention.user.id_str,
-      //             mentionFromScreenName: mention.user.screen_name,
-      //             description: mention.user.description,
-      //             profileImage: mention.user.profile_image_url_https,
-      //             location: mention.user.location,
-      //           }
-      //         };
-      //         return newMention;
-      //       });
-      //       pubsub.publish(NEW_MENTION, {newMention: allMentions});
-      //       allMentions.map(async (me) => {
-      //         console.log('ME', me)
-      //         const isPresent = await db.collection('mentions').findOne({mentionID: me.mentionID});
-      //         const isReply = await db.collection('mentions').findOne({mentionID: me.in_reply_to_status_id_str});
-      //         console.log('ISPRESENT', isPresent);
-      //         console.log('isReply', isReply);
-      //         if (isReply) {
-      //           const added = await db.collection('mentions').findOneAndUpdate({mentionID: me.in_reply_to_status_id_str}, { $addToSet: { replies: me } })
-      //           console.log('addedaddedadded', added);
-      //         } else if (!isPresent) {
-      //           await db.collection('mentions').insertOne(me);
-      //         }
-      //       })
-      //     })
-      //   } catch (e) {
-      //     // Display the error and quit
-      //     console.error(e);
-      //     process.exit(1);
-      //   }
-      // };
-      // startHook();
+          // Subscribes to your own user's activity
+          await webhook.subscribe({oauth_token: token, oauth_token_secret: tokenSecret});
+          webhook.on('event', async(event) => {
+            // push to database
+            const allMentions = event.tweet_create_events.map(mention => {
+              const tweetImages = mention.entities && mention.entities.media ? mention.entities.media : [];
+              const tweetMedia = tweetImages && tweetImages.length > 0 ? mention.entities.media.map(m => m.media_url) : [];
+              const newMention = {
+                _id: ObjectId(),
+                mentionID: mention.id_str,
+                mentionText: mention.text.replace(/(?:https?|ftp):\/\/[\n\S]+/g, ''),
+                timeStamp: mention.created_at,
+                in_reply_to_status_id_str: mention.in_reply_to_status_id_str,
+                tweetImages: tweetMedia,
+                tasks: [],
+                replies: [],
+                userData: {
+                  twitterUserId: mention.user.id_str,
+                  mentionFromScreenName: mention.user.screen_name,
+                  description: mention.user.description,
+                  profileImage: mention.user.profile_image_url_https,
+                  location: mention.user.location,
+                }
+              };
+              return newMention;
+            });
+            pubsub.publish(NEW_MENTION, {newMention: allMentions});
+            allMentions.map(async (me) => {
+              const isPresent = await db.collection('mentions').findOne({mentionID: me.mentionID});
+              const isReply = await db.collection('mentions').findOne({mentionID: me.in_reply_to_status_id_str});
+              if (isReply) {
+                const added = await db.collection('mentions').findOneAndUpdate({mentionID: me.in_reply_to_status_id_str}, { $addToSet: { replies: me } })
+              } else if (!isPresent) {
+                await db.collection('mentions').insertOne(me);
+              }
+            })
+          })
+        } catch (e) {
+          // Display the error and quit
+          console.error(e);
+          process.exit(1);
+        }
+      };
+      startHook();
      return {
        success: true,
        message: "Attatched webhook"

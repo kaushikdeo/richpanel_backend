@@ -93,10 +93,6 @@ const server = new ApolloServer({
     } else {
       let T = null;
       let webhook = null;
-      console.log('req.headers.authtoken', req.headers.authtoken);
-      console.log('req.headers.authtoken', req.headers.authtokensecret);
-      console.log('process.env.TWITTER_CONSUMER_SECRET', process.env.TWITTER_CONSUMER_SECRET);
-      console.log('TWITTER_CONSUMER_KEY', process.env.TWITTER_CONSUMER_KEY);
       if (req.headers.authtoken && req.headers.authtokensecret) {
         T = new Twit({
           consumer_key: process.env.TWITTER_CONSUMER_KEY,

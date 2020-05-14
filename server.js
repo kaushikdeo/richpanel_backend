@@ -8,12 +8,12 @@ const authRoutes = require("./routes/authRoutes");
 const cors = require("cors");
 const bodyParser = require('body-parser');
 const cookieParser = require("cookie-parser"); // parse cookie header
-const { Autohook } = require('twitter-autohook');
 const Twit = require('twit');
 const {ApolloServer, PubSub} = require('apollo-server-express');
 const typeDefs = require('./schema');
 const resolvers = require('./resolvers');
 require('dotenv').config();
+const webhookConfig = require('./config/webhookConfig');
 
 const app = express();
 
@@ -72,6 +72,14 @@ app.get("/", authCheck, (req, res) => {
   });
 });
 
+app.get("twitter/webhook", (req, res) => {
+  webhookConfig.getHandler(req, res);
+})
+
+app.post("/twitter/webhook", (req,res) => {
+  console.log('HELLO', req.body);
+})
+
 app.get(
   "/twitter/callback",
   passport.authenticate("twitter", {
@@ -86,13 +94,15 @@ const server = new ApolloServer({
   introspection: true,
   playground: true,
   context: async ({ req, connection }) => {
+    const client = await loadDB();
+    const db = await client.db('richpaneldb');
     if (!req) {
       return{
         pubsub,
+        db
       };
     } else {
       let T = null;
-      let webhook = null;
       if (req.headers.authtoken && req.headers.authtokensecret) {
         T = new Twit({
           consumer_key: process.env.TWITTER_CONSUMER_KEY,
@@ -102,14 +112,6 @@ const server = new ApolloServer({
           timeout_ms:           60*1000,  // optional HTTP request timeout to apply to all requests.
           strictSSL:            true,     // optional - requires SSL certificates to be valid.
         });
-        webhook = new Autohook({
-          token: req.headers.authtoken,
-          token_secret: req.headers.authtokensecret,
-          consumer_key: process.env.TWITTER_CONSUMER_KEY,
-          consumer_secret: process.env.TWITTER_CONSUMER_SECRET,
-          env: 'dev',
-          port: 1337
-        });
       }
       const client = await loadDB();
       const db = await client.db('richpaneldb');
@@ -118,7 +120,6 @@ const server = new ApolloServer({
         tokenSecret: req.headers.authtokensecret,
         T,
         db,
-        webhook,
         pubsub,
       };
     }

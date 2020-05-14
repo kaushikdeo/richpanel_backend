@@ -42,12 +42,6 @@ module.exports = gql`
     location: String,
   }
 
-  type Reply {
-    replyId: String
-    replyText: String
-    replyingUser: UserData
-  }
-
   type Task {
     _id: ID
     taskText: String!

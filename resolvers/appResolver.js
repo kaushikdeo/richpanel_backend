@@ -34,12 +34,21 @@ module.exports = {
         return newMention;
       })
       allMentions.map(async (me) => {
-        const isPresent = await db.collection('mentions').findOne({mentionID: me.mentionID});
-        if (!isPresent) {
-          await db.collection('mentions').insertOne(me);
+        // if the mention has a in_reply_to_status_id_str value then this is a reply
+        if (!me.in_reply_to_status_id_str) {
+          //this is a fresh mention
+            const isPresent = await db.collection('mentions').findOne({mentionID: me.mentionID});
+            if (!isPresent) {
+              me.orignalMention = null;
+              await db.collection('mentions').insertOne(me);
+            }
         }
+        // const isPresent = await db.collection('mentions').findOne({mentionID: me.mentionID});
+        // if (!isPresent) {
+        //   await db.collection('mentions').insertOne(me);
+        // }
       })
-      const dbMentions = await db.collection('mentions').find({}).sort({timeStamp: 1}).toArray();
+      const dbMentions = await db.collection('mentions').find({orignalMention: null}).sort({timeStamp: 1}).toArray();
       return dbMentions;
     },
   },
@@ -55,7 +64,6 @@ module.exports = {
       }
       // Add new task
       const newAddedTask = await db.collection('tasks').insertOne(newTask);
-      console.log('newly added task', newAddedTask);
       // Add taskId to the mention
       await db.collection('mentions').findOneAndUpdate({mentionID: mentionId}, {$addToSet: {tasks: newAddedTask.ops[0]._id}})
       return newTask
@@ -89,18 +97,15 @@ module.exports = {
       return newReply;
     },
     setupWebhook: async (parent, {}, {token, tokenSecret, T, db, pubsub}) => {
-      console.log('JHBSJHBXHJSBSHJBXHJBXJHSBXJHSBXHJSJHBSJHBSJHSJHBXJHSBXJHSBJHBXJHSBJHSBXJHSBXJHSBJHBJHSBJHSBJHSBJHSBJHSBJHBJHBJHBJSH');
       const webhook = new Autohook({
         token: token,
         token_secret: tokenSecret,
         consumer_key: process.env.TWITTER_CONSUMER_KEY,
         consumer_secret: process.env.TWITTER_CONSUMER_SECRET,
         env: 'dev',
-        port: 1337
       });
       const startHook = async () => {
         try {
-          
           // Removes existing webhooks
           await webhook.removeWebhooks();
           
@@ -111,7 +116,6 @@ module.exports = {
           // Subscribes to your own user's activity
           await webhook.subscribe({oauth_token: token, oauth_token_secret: tokenSecret});
           webhook.on('event', async(event) => {
-            // console.log('EVENT', event);
             // push to database
             const allMentions = event.tweet_create_events.map(mention => {
               const tweetImages = mention.entities && mention.entities.media ? mention.entities.media : [];
@@ -137,14 +141,21 @@ module.exports = {
             });
             const fetchedMentions = await Promise.all(
               allMentions.map(async (me) => {
-                const isPresent = await db.collection('mentions').findOne({mentionID: me.mentionID});
-                const isReply = await db.collection('mentions').findOne({mentionID: me.in_reply_to_status_id_str});
-                let subMention = null;
-                if (isReply) {
-                  const added = await db.collection('mentions').findOneAndUpdate({mentionID: me.in_reply_to_status_id_str}, { $addToSet: { replies: me } })
-                  subMention = added.value;
-                } else 
-                if (!isPresent) {
+                if (me.in_reply_to_status_id_str) {
+                  // this is a reply
+                  // fetch parent mention from DB
+                  const orignalMention = await db.collection('mentions').findOne({mentionID: me.in_reply_to_status_id_str});
+                  if (orignalMention.orignalMention){
+                    me.orignalMention = orignalMention.orignalMention;
+                  } else {
+                    me.orignalMention = me.in_reply_to_status_id_str
+                  }
+                  const newAdded = await db.collection('mentions').insertOne(me);
+                  const parentMention = await db.collection('mentions').findOneAndUpdate({mentionID: me.orignalMention}, {$addToSet: {replies: newAdded.ops[0]._id}}, {returnOriginal: false})
+                  subMention = parentMention.value;
+                } else {
+                  // this is a new mention
+                  me.orignalMention = null;
                   const newAdded = await db.collection('mentions').insertOne(me);
                   subMention = newAdded.ops[0];
                 }
@@ -181,6 +192,15 @@ module.exports = {
         return allTasks;
       }
       return [];
+    },
+    replies: async (parent, {}, {db}) => {
+      if (parent.replies && parent.replies.length > 0) {
+        const allReplies = await Promise.all(parent.replies.map(async (r) => {
+          const replyData = await db.collection('mentions').findOne({_id: ObjectId(r)});
+          return replyData;
+        }))
+        return allReplies;
+      }
     }
   },
 };

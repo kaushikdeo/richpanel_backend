@@ -1,6 +1,6 @@
 const router = require("express").Router();
 const passport = require("passport");
-const CLIENT_HOME_PAGE_URL = "https://richpaneldash.herokuapp.com";
+const CLIENT_HOME_PAGE_URL = "https://fast-reef-15816.herokuapp.com";
 
 // when login is successful, retrieve user info
 router.get("/login/success", (req, res) => {

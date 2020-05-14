@@ -103,6 +103,7 @@ module.exports = {
         consumer_key: process.env.TWITTER_CONSUMER_KEY,
         consumer_secret: process.env.TWITTER_CONSUMER_SECRET,
         env: 'dev',
+        port: 1337,
       });
       const startHook = async () => {
         try {

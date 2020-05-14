@@ -10,6 +10,8 @@ module.exports = {
     },
     fetchCurrentMentions: async (parent, {}, {T, db}) => {
       const currentMentions = await T.get("/statuses/mentions_timeline", {});
+      console.log('currentMentions', currentMentions);
+      console.log('FETCHING MENTIONS ...');
       const allMentions = currentMentions.data.map(mention => {
         const tweetImages = mention.entities && mention.entities.media ? mention.entities.media : [];
         const tweetMedia = tweetImages && tweetImages.length > 0 ? mention.entities.media.map(m => m.media_url) : [];
@@ -33,21 +35,18 @@ module.exports = {
         // console.log('ISO STRING', new Date(new Date(mention.created_at)));
         return newMention;
       })
-      allMentions.map(async (me) => {
-        // if the mention has a in_reply_to_status_id_str value then this is a reply
-        if (!me.in_reply_to_status_id_str) {
-          //this is a fresh mention
-            const isPresent = await db.collection('mentions').findOne({mentionID: me.mentionID});
-            if (!isPresent) {
-              me.orignalMention = null;
-              await db.collection('mentions').insertOne(me);
-            }
-        }
-        // const isPresent = await db.collection('mentions').findOne({mentionID: me.mentionID});
-        // if (!isPresent) {
-        //   await db.collection('mentions').insertOne(me);
-        // }
-      })
+      await Promise.all(allMentions.map(async (me) => {
+          // if the mention has a in_reply_to_status_id_str value then this is a reply
+          if (!me.in_reply_to_status_id_str) {
+            //this is a fresh mention
+              const isPresent = await db.collection('mentions').findOne({mentionID: me.mentionID});
+              if (!isPresent) {
+                me.orignalMention = null;
+                await db.collection('mentions').insertOne(me);
+              }
+          }
+        })
+      )
       const dbMentions = await db.collection('mentions').find({orignalMention: null}).sort({timeStamp: 1}).toArray();
       return dbMentions;
     },

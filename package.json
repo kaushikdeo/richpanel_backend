@@ -19,7 +19,7 @@
   "homepage": "https://github.com/kaushikdeo/richpanel#readme",
   "dependencies": {
     "apollo-link-http": "^1.5.17",
-    "apollo-server": "^2.13.0",
+    "apollo-server": "^2.25.4",
     "apollo-server-express": "^2.13.0",
     "body-parser": "^1.19.0",
     "cookie-parser": "^1.4.5",
